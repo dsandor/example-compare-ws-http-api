@@ -35,6 +35,8 @@ func (d *dependencies) auth(ctx context.Context, websocketEvent events.APIGatewa
 	fmt.Println("Auth handler hit.")
 	fmt.Printf("%+v\n", websocketEvent)
 
+	// events.APIGatewayV2CustomAuthorizerV2Request{}
+
 	policy := generatePolicy("user", "Allow", websocketEvent.MethodArn)
 
 	fmt.Printf("policy: %+v\n", policy)

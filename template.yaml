@@ -1,6 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 
+Parameters:
+  AuthDelay:
+    Type: String
+    Default: 0
+
+
 Resources:
 
   ########## API Gateway HTTP Resources ############
@@ -29,37 +35,12 @@ Resources:
         Authorizers:
           RequestAuth:
             AuthorizerPayloadFormatVersion: 2.0
-            FunctionArn: !GetAtt AuthFunction.Arn
+            EnableSimpleResponses: true
+            FunctionArn: !GetAtt HttpApiAuthFunction.Arn
             Identity:
               Headers:
                 - Authorization
               ReauthorizeEvery: 0
-
-#  HttpApi:
-#    Type: AWS::Serverless::Api
-#    Properties:
-#      Name: hello-world-api
-#      StageName: v1
-#      MethodSettings:
-#        - LoggingLevel: INFO
-#          ResourcePath: '/*' # allows logging on any resource
-#          HttpMethod: '*' # allows logging on all methods
-#      Cors:
-#        AllowMethods: "'GET,OPTIONS,HEAD,POST,PUT,DELETE,CONNECT,PATCH'"
-#        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Accept,Origin,Referer,User-Agent'"
-#        AllowOrigin: "'*'"
-#
-#      Auth:
-#        AddDefaultAuthorizerToCorsPreflight: false
-#        DefaultAuthorizer: RequestAuth
-#        Authorizers:
-#          RequestAuth:
-#            FunctionPayloadType: REQUEST
-#            FunctionArn: !GetAtt AuthFunction.Arn
-#            Identity:
-#              Headers:
-#                - Authorization
-#              ReauthorizeEvery: 0
 
   HelloWorldFunction:
     Type: AWS::Serverless::Function
@@ -80,6 +61,30 @@ Resources:
     Metadata:
       BuildMethod: makefile
 
+  HttpApiAuthFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: auth-http/
+      Handler: bootstrap       # note, this is the name of the executable output from the Makefile.
+      Runtime: provided.al2
+      Architectures: [ arm64 ]
+      Policies:
+        - AWSLambdaBasicExecutionRole
+      Environment:
+        Variables:
+          DELAY_MILLISECONDS: !Ref AuthDelay
+    Metadata:
+      BuildMethod: makefile
+
+  HttpApiAuthFunctionPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - Api
+      - AuthFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref HttpApiAuthFunction
+      Principal: apigateway.amazonaws.com
 
   ########## API Gateway WebSocket Resources ############
 
@@ -128,7 +133,7 @@ Resources:
       CloudWatchRoleArn: !GetAtt ApiGatewayLoggingRole.Arn
 
 
-########## Authorizer Function and APIGW Config ############
+########## Authorizer Function and APIGW Config for WebSocket ############
 
   Auth:
     Type: AWS::ApiGatewayV2::Authorizer
@@ -151,6 +156,9 @@ Resources:
       Architectures: [ arm64 ]
       Policies:
         - AWSLambdaBasicExecutionRole
+      Environment:
+        Variables:
+          DELAY_MILLISECONDS: !Ref AuthDelay
     Metadata:
       BuildMethod: makefile
 

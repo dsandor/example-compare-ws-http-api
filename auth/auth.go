@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-lambda-go/events"
+	"time"
 )
 
 func generatePolicy(principalId, effect, resource string) events.APIGatewayCustomAuthorizerResponse {
@@ -35,9 +36,11 @@ func (d *dependencies) auth(ctx context.Context, websocketEvent events.APIGatewa
 	fmt.Println("Auth handler hit.")
 	fmt.Printf("%+v\n", websocketEvent)
 
-	// events.APIGatewayV2CustomAuthorizerV2Request{}
-
 	policy := generatePolicy("user", "Allow", websocketEvent.MethodArn)
+
+	// allow simulating processing. For example, query an oauth provider for a jwks document, resolving a user's
+	// additional claims or entitlements, or simply additional security checks.
+	time.Sleep(time.Duration(d.DelayMilliseconds) * time.Millisecond)
 
 	fmt.Printf("policy: %+v\n", policy)
 

@@ -19,12 +19,11 @@ func main() {
 
 	if envDelayMilliseconds != "" {
 		parsedValue, err := strconv.ParseInt(envDelayMilliseconds, 10, 64)
-		if err != nil {
+		if err == nil {
 			d.DelayMilliseconds = parsedValue
 		}
 	}
 
-	fmt.Printf("%+v\n", os.Environ())
-	fmt.Println("Starting auth handler.")
+	fmt.Printf("Starting http auth handler. d.DelayMilliseconds=%d\n", d.DelayMilliseconds)
 	lambda.Start(d.auth)
 }
